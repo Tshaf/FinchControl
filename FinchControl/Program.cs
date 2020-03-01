@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using FinchAPI;
+using System.Linq;
+using System.Threading;
 
 
 namespace Project_FinchControl
@@ -15,7 +17,7 @@ namespace Project_FinchControl
     // Application Type: Console
     // Author: Shaffran, Tyler
     // Dated Created: 2/18/2020
-    // Last Modified: 2/23/2020
+    // Last Modified: 2/29/2020
     //
     // **************************************************
 
@@ -176,7 +178,7 @@ namespace Project_FinchControl
         /// *                     Talent Show Menu                          *
         /// *****************************************************************
         /// </summary>
-        static void DisplayTalentShowMenuScreen(Finch myFinch)
+        static void DisplayTalentShowMenuScreen(Finch finchRobot)
         {
             Console.CursorVisible = true;
 
@@ -206,19 +208,19 @@ namespace Project_FinchControl
                 switch (menuChoice)
                 {
                     case "a":
-                        DisplayLightAndSound(myFinch);
+                        DisplayLightAndSound(finchRobot);
                         break;
 
                     case "b":
-                        DisplayMovement(myFinch);
+                        DisplayMovement(finchRobot);
                         break;
 
                     case "c":
-                        SingSong(myFinch);
+                        SingSong(finchRobot);
                         break;
 
                     case "d":
-                        SurprisePerformance(myFinch);
+                        SurprisePerformance(finchRobot);
                         break;
 
                     case "q":
@@ -716,13 +718,482 @@ namespace Project_FinchControl
             DisplayMenuPrompt("Talent Show Menu");
 
         }
-        static void DataMenu(Finch finchrobot)
+        #endregion
+        #region Data Recorder
+        static void DataMenu(Finch finchRobot)
         {
-            Console.Clear();
-            Console.CursorVisible = false;
-            Console.WriteLine("\tFunction under maintenance, check back later");
-            DisplayMenuPrompt("Main Menu");
+            int dataPoints =0;
+            double frequencyofPoints =0;
+            double[] temperature = null;
+            bool quitDataRecorderMenu = false;
+            string menuChoice;
+            Console.CursorVisible = true;
+            int lightData = 0;
+            double lightFrequency = 0;
+            double[] ambientLight = null;
+            
+
+            do
+            {
+                DisplayScreenHeader("Data Recorder Menu");
+
+                //
+                // menu for user choices
+                //
+                Console.WriteLine("\ta) Number Of Temperature Collections");
+                Console.WriteLine("\tb) Temperature Gathering Frequency");
+                Console.WriteLine("\tc) Gather Temperature Data");
+                Console.WriteLine("\td) Data Display - Temperature");
+                Console.WriteLine("\te) Number of Light Collections");
+                Console.WriteLine("\tf) Light Gathering Frequency");
+                Console.WriteLine("\tg) Gather Light Data");
+                Console.WriteLine("\th) Data Display - Light");
+                Console.WriteLine("\tq) Main Menu");
+                Console.Write("\t\tEnter Choice:");
+                Console.CursorVisible = true;
+                menuChoice = Console.ReadLine().ToLower();
+
+                //
+                // switch/case for user choices
+                //
+                switch (menuChoice)
+                {
+                    case "a":
+                        dataPoints = GetUserNumberOfDataPoints();
+                        break;
+
+                    case "b":
+                        frequencyofPoints = GetUserFrequencyOfDataCollection();
+                        break;
+
+                    case "c":
+                        temperature = ReceiveData(dataPoints, frequencyofPoints, finchRobot);
+                        break;
+
+                    case "d":
+                        DisplayDataForUser(temperature);
+                        break;
+
+                    case "e":
+                        lightData = GetUserInputForLightData();
+                        break;
+
+                    case "f":
+                        lightFrequency = GetUserLightFrequency();
+                        break;
+
+                    case "g":
+                        ambientLight = GetUserInputForLightData(lightData, lightFrequency, finchRobot);
+                        break;
+
+                    case "h":
+                        DispalyLightData(ambientLight);
+                        break;
+                                             
+
+                    case "q":
+                        quitDataRecorderMenu = true;
+                        break;
+
+                    default:
+                        Console.WriteLine();
+                        Console.WriteLine("\tPlease enter a letter for the menu choice.");
+                        DisplayContinuePrompt();
+                        break;
+                }
+
+            } while (!quitDataRecorderMenu);
         }
+
+        /// <summary>
+        /// Displays Light Data
+        /// </summary>
+        /// <param name="ambientLight"></param>
+
+        private static void DispalyLightData(double[] ambientLight)
+        {
+            DisplayScreenHeader("Light Data Display");
+            Console.WriteLine();
+            Console.WriteLine("\t The Finch will now display the light readings from 0(dark) to 255(bright)");
+            Console.WriteLine();
+            DisplayContinuePrompt();
+
+            Console.WriteLine("\tAmbient Light".PadLeft(20));
+            Console.WriteLine("************".PadLeft(20));
+            foreach (double light in ambientLight)
+                Console.WriteLine(light.ToString().PadLeft(15));
+            
+           
+
+            DisplayContinuePrompt();
+
+            bool validResponse = false;
+            string userResponse;
+            do
+
+            {
+                Console.Write("\tEnter the way in which the finch will display the light data \"sort\" \"sum\" \"average\"  " +
+                    "for you");
+                Console.WriteLine();
+                Console.Write("\t");
+                userResponse = Console.ReadLine().ToLower();
+                switch (userResponse)
+
+                {
+
+                    case "sort":
+                        validResponse = true;
+                        Array.Sort(ambientLight);
+                        for (int i = 0; i < ambientLight.Length; i++)
+                            Console.WriteLine("\t" + ambientLight[i].ToString("n0"));
+                        Console.WriteLine();
+                        
+
+
+                        break;
+                    case "sum":
+                        validResponse = true;
+                        double sum = ambientLight.Sum();
+                        Console.WriteLine("\t The sum of the gathered light data is {0}", sum.ToString("n0"));
+                        
+                        break;
+
+                    case "average":
+                        validResponse = true;
+                        double average = ambientLight.Average();
+                        Console.WriteLine("\t Average: {0}", average.ToString("n0"));
+                        Console.WriteLine();
+                        
+                        break;
+
+
+
+                    default:
+                        Console.WriteLine();
+                        Console.WriteLine("\tPlease enter a valid response");
+
+                        break;
+
+                }
+
+
+
+            } while (!validResponse);
+
+            DisplayContinuePrompt();
+            
+        }
+
+        /// <summary>
+        /// Records Light Data
+        /// </summary>
+        /// <param name="lightData"></param>
+        /// <param name="lightFrequency"></param>
+        /// <param name="finchRobot"></param>
+        /// <returns></returns>
+        private static double[] GetUserInputForLightData(int lightData, double lightFrequency, Finch finchRobot)
+        {
+            double[] ambientLight = new double[lightData];
+            DisplayScreenHeader("Finch will now gather light data");
+            // ask user to continue validate string
+            Console.WriteLine($"\tNumber of light readings for the Finch to gather per user request {lightData}");
+            Console.WriteLine();
+            Console.WriteLine($"\tFrequency of light reading collection per user request {lightFrequency}");
+            Console.WriteLine();
+            Console.WriteLine("\tThe Finch Robot is ready to gather the light information that you have requested");
+                
+            DisplayContinuePrompt();
+
+            for (int i = 0; i < lightData; i++)
+            {
+                ambientLight[i] = finchRobot.getRightLightSensor();
+                Console.WriteLine($"\tlight reading {i + 1} is {ambientLight[i].ToString("n0")}");
+                int multSec = Convert.ToInt32(lightFrequency);
+                finchRobot.wait(multSec * 1000);
+
+            }
+
+
+
+            DisplayContinuePrompt();
+            return ambientLight;
+        }
+        /// <summary>
+        /// Records Frequency of light gathering
+        /// </summary>
+        /// <returns>Light gathering Frequency</returns>
+        static double GetUserLightFrequency()
+        {
+            DisplayScreenHeader("Frequency of Light Collection");
+
+            double frequencyOfLightGather;
+            string userResponse;
+            bool validResponse;
+            do
+            {
+                Console.WriteLine("\tEnter the frequency in which you wish the " +
+                    "Finch to gather light data for you (in seconds) ");
+                Console.WriteLine();
+                Console.Write("\t");
+
+                userResponse = Console.ReadLine();
+                validResponse = double.TryParse(userResponse, out frequencyOfLightGather);
+                if (!validResponse)
+                {
+                    Console.WriteLine("");
+                    Console.WriteLine("\tPlease enter an integer number");
+                }
+            }
+            while (!validResponse);
+
+            DisplayContinuePrompt();
+
+
+
+            return frequencyOfLightGather;
+        }
+
+        /// <summary>
+        /// Gets the number of light readings
+        /// </summary>
+        /// <returns>Light Readings</returns>
+        static int GetUserInputForLightData()
+        {
+            int userLightData;
+            string userEntry;
+            bool validResponse;
+
+            DisplayScreenHeader("Number Of Light Readings For The Finch To Gather");
+            do
+            {
+                Console.WriteLine("\tEnter the number of light readings you would like " +
+                    "the finch to gather");
+                Console.WriteLine();
+                Console.Write("\t");
+
+                userEntry = Console.ReadLine();
+                validResponse = int.TryParse(userEntry, out userLightData);
+                if (!validResponse)
+                {
+                    Console.WriteLine("");
+                    Console.WriteLine("\tPlease enter an integer number");
+                }
+            }
+            while (!validResponse);
+
+            DisplayContinuePrompt();
+
+            return userLightData;
+
+        }
+        /// <summary>
+        /// Displays temperature data
+        /// </summary>
+        /// <param name="temperature"></param>
+        private static void DisplayDataForUser(double[] temperature)
+        {
+            DisplayScreenHeader("Graph of Temperature Data");
+            Console.WriteLine();
+            Console.WriteLine("\t The Finch will now display the temperature readings in degrees Fahrenheit");
+            Console.WriteLine();
+            DisplayContinuePrompt();
+          
+            Console.WriteLine(
+                "\tRecording Number".PadLeft(15) +
+                "Temperatures" .PadLeft(15) 
+                );
+            Console.WriteLine(
+               "\t***************".PadLeft(15) +
+               "**********".PadLeft(15)
+               );
+            for (int i = 0; i < temperature.Length; i++)
+            {
+                Console.WriteLine(("\t") + (i + 1).ToString("n0").PadLeft(10) +
+                    (temperature[i] * 1.8 + 32).ToString("#°F").PadLeft(15));
+            }
+
+            DisplayContinuePrompt();
+            bool validResponse = false;
+            string userResponse;
+            Console.Clear();
+            DisplayScreenHeader("Array Display");
+
+            do
+
+            {
+                Console.Write("\tEnter the way in which the finch will display the data \"sort\" \"sum\" \"average\"  " +
+                    "and the finch will display it for you");
+                Console.WriteLine("");
+                Console.Write("\t");
+                userResponse = Console.ReadLine().ToLower();
+                switch (userResponse)
+
+                {
+
+                    case "sort":
+                        validResponse = true;
+                        Array.Sort(temperature);
+                        for (int i = 0; i < temperature.Length; i++)
+                            Console.WriteLine("\t" + temperature[i].ToString("n0"));
+                        
+                        
+
+                        
+                        break;
+                    case "sum":
+                        validResponse = true;
+                        double sum = temperature.Sum();
+                        double degF = CelsiusToFahrenheit(sum);
+                        Console.WriteLine("\t The sum of temperatures in Fahrenheit is {0}", degF.ToString("#°F"));
+                        
+                        break;
+
+                    case "average":
+                        validResponse = true;
+                        double average = temperature.Average();
+                        double avgF = CelsiusToFahrenheit(average);
+                        Console.WriteLine("\t Average in Fahrenheit: {0}", avgF.ToString("#°F"));
+                        Console.WriteLine();
+                        
+                        break;
+
+                    
+
+                    default:
+                        Console.WriteLine();
+                        Console.WriteLine("\tPlease enter a valid response");
+
+                        break;
+
+                }
+
+                
+
+            } while (!validResponse);
+            DisplayContinuePrompt();
+        }
+
+        static double CelsiusToFahrenheit(double userInput)
+        {
+            
+            double degC = Convert.ToDouble(userInput);
+            double degF = (degC * 1.8) + 32;
+            return degF;
+        }
+
+        
+        /// <summary>
+        /// Takes Temperature Data
+        /// </summary>
+        /// <param name="dataPoints"></param>
+        /// <param name="frequencyofPoints"></param>
+        /// <param name="finchRobot"></param>
+        /// <returns></returns>
+        static double[] ReceiveData(int dataPoints, double frequencyofPoints, Finch finchRobot)
+        {
+            double[] temperature = new double[dataPoints];
+            DisplayScreenHeader("Finch will now gather data");
+            
+            Console.WriteLine("\tNumber of data points for the Finch to gather per user request {0}", dataPoints);
+            Console.WriteLine();
+            Console.WriteLine("\tFrequency of data point collection per user request {0}", frequencyofPoints);
+            Console.WriteLine();
+            Console.WriteLine("\tThe Finch Robot is ready to gather the temperature information that you have requested");
+               
+            DisplayContinuePrompt();
+
+            for (int i = 0; i < dataPoints; i++)
+            {
+                temperature[i] = finchRobot.getTemperature();
+                Console.WriteLine($"\tTemp reading {i + 1} is {temperature[i].ToString("n0")}");
+                int multSec = Convert.ToInt32(frequencyofPoints);
+                finchRobot.wait(multSec * 1000);
+                    
+            }
+
+                
+ 
+            DisplayContinuePrompt();
+            return temperature;
+
+
+        }
+
+
+
+        /// <summary>
+        /// Gets the frequency in which user wants to collect data points
+        /// </summary>
+        /// <returns>data point frequency</returns>
+
+        static double GetUserFrequencyOfDataCollection()
+        {
+            DisplayScreenHeader("Frequency of Temperature Collection");
+
+            double frequencyOfDataPoints;
+            string userResponse;
+            bool validResponse;
+            do
+            {
+                Console.WriteLine("\tEnter the frequency in which you wish the " +
+                    "Finch to gather temperature data for you (in seconds) ");
+                Console.WriteLine();
+                Console.Write("\t");
+
+                userResponse = Console.ReadLine();
+                validResponse = double.TryParse(userResponse, out frequencyOfDataPoints);
+                if (!validResponse)
+                {
+                    Console.WriteLine("");
+                    Console.WriteLine("\tPlease enter an integer number");
+                }
+            }
+            while (!validResponse);
+
+            DisplayContinuePrompt();
+            
+
+
+            return frequencyOfDataPoints;
+
+            
+        }
+
+        /// <summary>
+        /// Gets users number of data points they wish to see
+        /// </summary>
+        /// <returns>user data points</returns>
+        static int GetUserNumberOfDataPoints()
+        {
+            int userDataPoints;
+            string userEntry;
+            bool validResponse;
+
+            DisplayScreenHeader("Number Of Data Points for Finch To Gather");
+            do
+            {
+                Console.WriteLine("\tEnter the number of data points you would like " +
+                    "the finch to gather");
+                Console.WriteLine();
+                Console.Write("\t");
+
+                userEntry = Console.ReadLine();
+                validResponse = int.TryParse(userEntry, out userDataPoints);
+                if (!validResponse)
+                {
+                    Console.WriteLine("");
+                    Console.WriteLine("\tPlease enter an integer number");
+                }
+            }
+            while (!validResponse);
+
+            DisplayContinuePrompt();
+
+            return userDataPoints;
+        }
+        #endregion
+
+
         static void AlarmMenu(Finch finchrobot)
         {
             Console.Clear();
@@ -737,7 +1208,7 @@ namespace Project_FinchControl
             Console.WriteLine("\tFunction under maintenance, check back later");
             DisplayMenuPrompt("Main Menu");
         }
-        #endregion
+        
 
         #region FINCH ROBOT MANAGEMENT
         //**********************
