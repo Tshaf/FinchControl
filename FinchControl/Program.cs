@@ -246,9 +246,12 @@ namespace Project_FinchControl
         static void WriteColorSelection(ConsoleColor letterColor, ConsoleColor backgroundColor)
         {
             string dataPath = @"Data/Colorchoice.txt";
+            string[] colorchoice = new string[2];
             string color = letterColor.ToString();
             string bColor = backgroundColor.ToString();
-            File.WriteAllText(dataPath, color + "\n" + bColor);
+            colorchoice[0] = color;
+            colorchoice[1] = bColor;
+            File.WriteAllText(dataPath, colorchoice[0] + "\n" + colorchoice[1]);
 
         }
         #endregion
