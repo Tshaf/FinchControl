@@ -34,6 +34,8 @@ namespace Project_FinchControl
         DONE
     }
 
+   
+
     // **************************************************
     //
     // Title: CIT Finch Control Project
@@ -42,7 +44,7 @@ namespace Project_FinchControl
     // Application Type: Console
     // Author: Shaffran, Tyler
     // Dated Created: 2/18/2020
-    // Last Modified: 3/14/2020
+    // Last Modified: 3/29/2020
     //
     // **************************************************
 
@@ -55,26 +57,208 @@ namespace Project_FinchControl
         static void Main(string[] args)
         {
             SetTheme();
-
-            DisplayWelcome();
             DisplayMenu();
             DisplayProgramEnd();
         }
-
+        #region User Theme
         /// <summary>
         /// setup the console theme
         /// </summary>
         static void SetTheme()
         {
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.BackgroundColor = ConsoleColor.Black;
+            (ConsoleColor letterColor, ConsoleColor backgroundColor) userColors;
+            bool colorsChosen = false;
+            Console.CursorVisible = true;
+            userColors = ReadColorSelection();
+            Console.ForegroundColor = userColors.letterColor;
+            Console.BackgroundColor = userColors.backgroundColor;
+            Console.Clear();
+
+            DisplayScreenHeader("Welcome to the Finch Control Program");
+            Console.WriteLine();
+            Console.WriteLine("\t The user may now set the colors for the rest of the program");
+            Console.WriteLine();
+            Console.WriteLine("\t The current colors are displayed below");
+            Console.WriteLine();
+            Console.WriteLine($"\t The current letter color is {Console.ForegroundColor}");
+            Console.WriteLine($"\t The current background color is {Console.BackgroundColor}");
+            Console.WriteLine();
+            do
+            {
+                Console.Write("\t Would you like to change the current colors? Please enter yes or no: ");
+                string userResponse = Console.ReadLine().ToLower();
+                switch (userResponse)
+                {
+                    case "yes":
+                        userColors.letterColor = GetLetterColor();
+                        userColors.backgroundColor = GetBackgroundColor();
+                        Console.ForegroundColor = userColors.letterColor;
+                        Console.BackgroundColor = userColors.backgroundColor;
+                        Console.Clear();
+                        DisplayScreenHeader("New User Colors");
+                        Console.WriteLine($"\t User has set new letter color to {Console.ForegroundColor}");
+                        Console.WriteLine($"\t User has set new background color to {Console.BackgroundColor}");
+                        Console.WriteLine();
+                        Console.WriteLine("\t Is the user happy with this color selection?");
+                        Console.Write("\t ");
+                        if (Console.ReadLine().ToLower() == "yes")
+                        {
+                            colorsChosen = true;
+                            WriteColorSelection(userColors.letterColor, userColors.backgroundColor);
+                        }
+                        break;
+
+                    case "no":
+                        colorsChosen = true;
+                        break;
+
+                    default:
+                        Console.WriteLine("\t Please enter yes or no");
+                        break;
+                }
+
+
+            } while (!colorsChosen);
         }
 
+        private static ConsoleColor GetBackgroundColor()
+        {
+            Console.Clear();
+            ConsoleColor userColor;
+            int count = 1;
+            bool validColor;
+            Console.CursorVisible = true;
+            DisplayScreenHeader("New Background Color");
+            Console.WriteLine("\t   Valid colors are:");
+            
+            foreach (string colorOptions in Enum.GetNames(typeof(ConsoleColor)))
+            {   
+                Console.WriteLine($"\t\t{count}: {colorOptions.ToLower()}");
+                count++;
+            }
+            do
+            {
+                Console.WriteLine();
+                Console.WriteLine("\t Enter a new background color");
+                Console.Write("\t ");
+                validColor = Enum.TryParse<ConsoleColor>(Console.ReadLine(), true, out userColor);
+
+                if (!validColor)
+                {
+                    Console.WriteLine("\t That is not a valid color, Please try again");
+                }
+                else
+                {
+                    validColor = true;
+                }
+            } while (!validColor);
+            string exceptionMessage;
+            string catchColor = userColor.ToString();
+            catchColor = CatchException(out exceptionMessage);
+            Console.WriteLine();
+            Console.WriteLine($"\t *{exceptionMessage}*");
+            Console.WriteLine();
+            Console.WriteLine("\t Press any key to continue");
+            Console.ReadKey();
+            return userColor;
+        }
+
+        static ConsoleColor GetLetterColor()
+        {
+            Console.CursorVisible = true;
+            Console.Clear();
+            ConsoleColor userColor;
+            int count = 1;
+            bool validColor;
+            DisplayScreenHeader("New Letter Color");
+            Console.WriteLine("\t   Valid colors are:");
+            foreach (string colorOptions in Enum.GetNames(typeof(ConsoleColor)))
+            {
+                Console.WriteLine($"\t\t {count}: {colorOptions.ToLower()}");
+                count++;
+            }
+            do
+            {
+                Console.WriteLine();
+                Console.WriteLine("\t Enter a new letter color");
+                Console.Write("\t ");
+                validColor = Enum.TryParse<ConsoleColor>(Console.ReadLine(), true, out userColor);
+
+                if (!validColor)
+                {
+                    Console.WriteLine("\t That is not a valid color, Please try again");
+                }
+                else
+                {
+                    validColor = true;
+                }
+            } while (!validColor);
+            string exceptionMessage;
+            string catchColor = userColor.ToString();
+            catchColor = CatchException(out exceptionMessage);
+            Console.WriteLine();
+            Console.WriteLine($"\t *{exceptionMessage}*");
+            Console.WriteLine();
+            Console.WriteLine("\t Pressy any key to continue");
+            Console.ReadKey();
+            return userColor;
+        }
+
+        static string CatchException(out string exceptionMessage)
+        {
+            string path = @"Data/Colorchoice.txt";
+            string userColor;
+
+            try
+            {
+                userColor = File.ReadAllText(path);
+                exceptionMessage = "Color successfully changed";
+            }
+            catch (DirectoryNotFoundException)
+            {
+                exceptionMessage = "Cannot find folder for the text file";
+            }
+            catch (FileNotFoundException)
+            {
+                exceptionMessage = "Cannot locate the requested file";
+            }
+            catch (Exception)
+            {
+                exceptionMessage = "Unable to read text file";
+            }
+            return exceptionMessage;
+        }
+
+        static (ConsoleColor letterColor, ConsoleColor backgroundColor) ReadColorSelection()
+        {
+            string dataPath = @"Data/Colorchoice.txt";
+            string[] colorChoice;
+            ConsoleColor letterColor;
+            ConsoleColor backgroundColor;
+
+            colorChoice = File.ReadAllLines(dataPath);
+            Enum.TryParse(colorChoice[0], true, out letterColor);
+            Enum.TryParse(colorChoice[1], true, out backgroundColor);
+
+            return (letterColor, backgroundColor);
+        }
+
+        static void WriteColorSelection(ConsoleColor letterColor, ConsoleColor backgroundColor)
+        {
+            string dataPath = @"Data/Colorchoice.txt";
+            string color = letterColor.ToString();
+            string bColor = backgroundColor.ToString();
+            File.WriteAllText(dataPath, color + "\n" + bColor);
+
+        }
+        #endregion
         /// <summary>
         /// *****************************************************************
         /// *                     Main Menu                                 *
         /// *****************************************************************
         /// </summary>
+
+        #region Main Menu
         static void DisplayMenu()
         {
 
@@ -96,7 +280,8 @@ namespace Project_FinchControl
                 Console.WriteLine("\tc) Data Recorder");
                 Console.WriteLine("\td) Alarm System");
                 Console.WriteLine("\te) User Programming");
-                Console.WriteLine("\tf) Disconnect Finch Robot");
+                Console.WriteLine("\tf) Change Color Theme ");
+                Console.WriteLine("\tg) Disconnect Finch Robot");
                 Console.WriteLine("\tq) Quit");
                 Console.Write("\t\tEnter Choice:");
                 Console.CursorVisible = true;
@@ -148,7 +333,6 @@ namespace Project_FinchControl
                             Console.WriteLine("Please make sure the robot is connected");
                             DisplayContinuePrompt();
                         }
-
                         break;
 
                     case "e":
@@ -162,26 +346,18 @@ namespace Project_FinchControl
                             Console.WriteLine("Please make sure the robot is connected");
                             DisplayContinuePrompt();
                         }
-
                         break;
 
                     case "f":
+                        SetTheme();
+                        break;
 
+                    case "g":
                         DisconnectFinchRobot(finchRobot);
-                        
-                        
                         break;
 
                     case "q":
-                        if (finchRobotConnected)
-                        {
-                            finchRobot.disConnect();
-                        }
-                        else
-                        {
-                            quitApplication = true;
-                        }
-                        
+                        quitApplication = true;
                         break;
 
                     default:
@@ -193,6 +369,7 @@ namespace Project_FinchControl
 
             } while (!quitApplication);
         }
+        #endregion
 
         #region TALENT SHOW
 
@@ -742,6 +919,7 @@ namespace Project_FinchControl
 
         }
         #endregion
+
         #region Data Recorder
         static void DataMenu(Finch finchRobot)
         {
@@ -2784,7 +2962,6 @@ namespace Project_FinchControl
         static void DisplayWelcome()
         {
             Console.CursorVisible = false;
-
             Console.Clear();
             Console.WriteLine();
             Console.WriteLine("\t\tFinch Control Program");
